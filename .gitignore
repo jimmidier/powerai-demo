@@ -28,3 +28,5 @@ bld/
 # Test Tool
 .notification.testtoolstore.json
 devTools
+
+.vs/
