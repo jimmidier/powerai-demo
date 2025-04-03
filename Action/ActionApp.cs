@@ -6,6 +6,7 @@ using AdaptiveCards;
 using Newtonsoft.Json.Linq;
 using System.Text.Json;
 using Microsoft.Bot.Connector.Authentication;
+using TestTeamsApp.Helpers;
 
 namespace TestTeamsApp.Action;
 
@@ -79,7 +80,14 @@ public class ActionApp : TeamsActivityHandler
 
         var client = new GraphClient(tokenResponse.Token);
         var chatMessages = await client.GetChatMessagesAsync(turnContext.Activity.Conversation.Id, cancellationToken);
-        var chatMessageContents = chatMessages.Select(m => m.Body.Content);
+        
+        // 使用 ChatMessageHelper 处理消息
+        var formattedMessages = ChatMessageHelper.FormatChatMessages(chatMessages);
+        
+        // 将聊天消息转换为JSON格式并打印到控制台
+        var jsonContent = ChatMessageHelper.ConvertToJsonFormat(chatMessages);
+        Console.WriteLine("---Chat messages in JSON format:");
+        Console.WriteLine(jsonContent);
 
         return new MessagingExtensionActionResponse
         {
@@ -87,10 +95,10 @@ public class ActionApp : TeamsActivityHandler
             {
                 Value = new TaskModuleTaskInfo
                 {
-                    Card = GetChatMessagesCard(chatMessageContents),
+                    Card = GetChatMessagesCard(formattedMessages),
                     Height = 250,
                     Width = 400,
-                    Title = "Adaptive Card: Inputs",
+                    Title = "Chat Messages",
                 },
             },
         };
@@ -102,13 +110,16 @@ public class ActionApp : TeamsActivityHandler
 
         card.Body.Add(new AdaptiveTextBlock()
         {
-            Text = $"Hello, this is your chat messages",
+            Text = $"聊天记录",
             Size = AdaptiveTextSize.ExtraLarge
         });
 
+        // 取最新的五条消息显示
+        var recentMessages = messageContents.TakeLast(5);
+        
         card.Body.Add(new AdaptiveRichTextBlock()
         {
-            Inlines = [.. messageContents.Take(5).Select(m => new AdaptiveTextRun(m)).Cast<AdaptiveInline>()]
+            Inlines = [.. recentMessages.Select(m => new AdaptiveTextRun(m)).Cast<AdaptiveInline>()]
         });
 
         return new Attachment()

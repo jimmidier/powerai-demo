@@ -66,6 +66,7 @@
     },
     "validDomains": [
         "${{BOT_DOMAIN}}",
-        "token.botframework.com"
+        "token.botframework.com",
+        "power-ai-front-end.vercel.app"
     ]
 }
