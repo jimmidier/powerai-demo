@@ -4,7 +4,6 @@ using Microsoft.Bot.Schema;
 using Microsoft.Bot.Schema.Teams;
 using AdaptiveCards;
 using Newtonsoft.Json.Linq;
-using System.Text.Json;
 using Microsoft.Bot.Connector.Authentication;
 using TestTeamsApp.Helpers;
 
@@ -13,10 +12,9 @@ namespace TestTeamsApp.Action;
 public class ActionApp : TeamsActivityHandler
 {
     private readonly string _adaptiveCardFilePath = Path.Combine(".", "Resources", "helloWorldCard.json");
-    // Action.
+    
     protected override async Task<MessagingExtensionActionResponse> OnTeamsMessagingExtensionSubmitActionAsync(ITurnContext<IInvokeActivity> turnContext, MessagingExtensionAction action, CancellationToken cancellationToken)
     {
-        // The user has chosen to create a card by choosing the 'Create Card' context menu command.
         var actionData = ((JObject)action.Data).ToObject<CardResponse>();
         var templateJson = await System.IO.File.ReadAllTextAsync(_adaptiveCardFilePath, cancellationToken);
         var template = new AdaptiveCards.Templating.AdaptiveCardTemplate(templateJson);
@@ -27,10 +25,6 @@ public class ActionApp : TeamsActivityHandler
             ContentType = AdaptiveCard.ContentType,
             Content = adaptiveCard
         };
-
-        Console.WriteLine($"---chat id: {turnContext.Activity.Conversation.Id}");
-        // var activityValue = turnContext.Activity.Value;
-        // Console.WriteLine($"--activity value: {JsonSerializer.Serialize(activityValue)}");
 
         return new MessagingExtensionActionResponse
         {
@@ -45,16 +39,11 @@ public class ActionApp : TeamsActivityHandler
 
     protected override async Task<MessagingExtensionActionResponse> OnTeamsMessagingExtensionFetchTaskAsync(ITurnContext<IInvokeActivity> turnContext, MessagingExtensionAction action, CancellationToken cancellationToken)
     {
-        var state = action.State; // Check the state value
-        var tokenResponse = await GetTokenResponse(turnContext, state, cancellationToken);
+        var tokenResponse = await GetTokenResponse(turnContext, action.State, cancellationToken);
         if (tokenResponse == null || string.IsNullOrEmpty(tokenResponse.Token))
         {
-            // There is no token, so the user has not signed in yet.
-
-            // Retrieve the OAuth Sign in Link to use in the MessagingExtensionResult Suggested Actions
             var signInLink = await GetSignInLinkAsync(turnContext, cancellationToken).ConfigureAwait(false);
-            Console.WriteLine($"----sign in link: {signInLink}");
-
+            
             return new MessagingExtensionActionResponse
             {
                 ComposeExtension = new MessagingExtensionResult
@@ -76,18 +65,11 @@ public class ActionApp : TeamsActivityHandler
             };
         }
 
-        Console.WriteLine($"---token: {tokenResponse.Token}");
-
         var client = new GraphClient(tokenResponse.Token);
         var chatMessages = await client.GetChatMessagesAsync(turnContext.Activity.Conversation.Id, cancellationToken);
         
-        // 使用 ChatMessageHelper 处理消息
         var formattedMessages = ChatMessageHelper.FormatChatMessages(chatMessages);
-        
-        // 将聊天消息转换为JSON格式并打印到控制台
-        var jsonContent = ChatMessageHelper.ConvertToJsonFormat(chatMessages);
-        Console.WriteLine("---Chat messages in JSON format:");
-        Console.WriteLine(jsonContent);
+        var suggestedReplies = await ChatMessageHelper.GetSuggestedRepliesAsync(chatMessages);
 
         return new MessagingExtensionActionResponse
         {
@@ -95,32 +77,79 @@ public class ActionApp : TeamsActivityHandler
             {
                 Value = new TaskModuleTaskInfo
                 {
-                    Card = GetChatMessagesCard(formattedMessages),
-                    Height = 250,
-                    Width = 400,
-                    Title = "Chat Messages",
+                    Card = GetChatMessagesCardWithSuggestions(formattedMessages, suggestedReplies),
+                    Height = 500,
+                    Width = 600,
+                    Title = "聊天记录与回复建议",
                 },
             },
         };
     }
 
-    private static Attachment GetChatMessagesCard(IEnumerable<string> messageContents)
+    private static Attachment GetChatMessagesCardWithSuggestions(IEnumerable<string> messageContents, List<string> suggestedReplies)
     {
         var card = new AdaptiveCard(new AdaptiveSchemaVersion(1, 0));
 
         card.Body.Add(new AdaptiveTextBlock()
         {
-            Text = $"聊天记录",
-            Size = AdaptiveTextSize.ExtraLarge
+            Text = "聊天记录",
+            Size = AdaptiveTextSize.Large,
+            Weight = AdaptiveTextWeight.Bolder
         });
 
-        // 取最新的五条消息显示
         var recentMessages = messageContents.TakeLast(5);
-        
-        card.Body.Add(new AdaptiveRichTextBlock()
+        foreach (var message in recentMessages)
         {
-            Inlines = [.. recentMessages.Select(m => new AdaptiveTextRun(m)).Cast<AdaptiveInline>()]
+            card.Body.Add(new AdaptiveTextBlock()
+            {
+                Text = message,
+                Wrap = true
+            });
+        }
+        
+        card.Body.Add(new AdaptiveContainer()
+        {
+            Items = new List<AdaptiveElement>()
+            {
+                new AdaptiveTextBlock()
+                {
+                    Text = "─────────────────────────────",
+                    Color = AdaptiveTextColor.Accent,
+                    HorizontalAlignment = AdaptiveHorizontalAlignment.Center
+                }
+            },
+            Spacing = AdaptiveSpacing.Medium
         });
+        
+        card.Body.Add(new AdaptiveTextBlock()
+        {
+            Text = "AI 建议回复选项:",
+            Size = AdaptiveTextSize.Medium,
+            Weight = AdaptiveTextWeight.Bolder,
+            Color = AdaptiveTextColor.Accent
+        });
+        
+        for (int i = 0; i < suggestedReplies.Count; i++)
+        {
+            card.Body.Add(new AdaptiveTextBlock()
+            {
+                Text = $"选项 {i + 1}:",
+                Weight = AdaptiveTextWeight.Bolder,
+                Spacing = AdaptiveSpacing.Medium
+            });
+            
+            card.Body.Add(new AdaptiveTextBlock()
+            {
+                Text = suggestedReplies[i],
+                Wrap = true
+            });
+            
+            card.Actions.Add(new AdaptiveSubmitAction()
+            {
+                Title = $"使用选项 {i + 1}",
+                Data = new { copiedText = suggestedReplies[i], optionNumber = i + 1 }
+            });
+        }
 
         return new Attachment()
         {
@@ -136,24 +165,18 @@ public class ActionApp : TeamsActivityHandler
         return resource.SignInLink;
     }
 
-
     private async Task<TokenResponse> GetTokenResponse(ITurnContext<IInvokeActivity> turnContext, string state, CancellationToken cancellationToken)
     {
         var magicCode = string.Empty;
 
-        if (!string.IsNullOrEmpty(state))
+        if (!string.IsNullOrEmpty(state) && int.TryParse(state, out var parsed))
         {
-            if (int.TryParse(state, out var parsed))
-            {
-                magicCode = parsed.ToString();
-            }
+            magicCode = parsed.ToString();
         }
 
         var userTokenClient = turnContext.TurnState.Get<UserTokenClient>();
-        var tokenResponse = await userTokenClient.GetUserTokenAsync(turnContext.Activity.From.Id, "BotTeamsAuthADv2", turnContext.Activity.ChannelId, magicCode, cancellationToken).ConfigureAwait(false);
-        return tokenResponse;
+        return await userTokenClient.GetUserTokenAsync(turnContext.Activity.From.Id, "BotTeamsAuthADv2", turnContext.Activity.ChannelId, magicCode, cancellationToken).ConfigureAwait(false);
     }
-
 }
 
 internal class CardResponse
