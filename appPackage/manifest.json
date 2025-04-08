@@ -28,28 +28,16 @@
             "botId": "${{BOT_ID}}",
             "commands": [
                 {
-                    "id": "createCard",
+                    "id": "getSuggestions",
                     "context": [
                         "compose",
                         "message",
                         "commandBox"
                     ],
-                    "description": "Command to run action to create a Card from Compose Box",
-                    "title": "Create Card",
+                    "description": "Command to run action to get suggestions from Compose Box",
+                    "title": "Get Suggestions",
                     "type": "action",
-                    "initialRun": false,
-                    "fetchTask": true,
-                    "parameters": [
-                        {
-                            "name": "param",
-                            "title": "param",
-                            "description": ""
-                        }
-                    ],
-                    "taskInfo": {
-                        "height": "large",
-                        "width": "large"
-                    }
+                    "fetchTask": true
                 }
             ]
         }
@@ -65,8 +53,11 @@
         "resource": "https://graph.microsoft.com/chat.read"
     },
     "validDomains": [
-        "${{BOT_DOMAIN}}",
+        "mepowerai.azurewebsites.net",
         "token.botframework.com",
-        "power-ai-front-end.vercel.app"
+        "power-ai-front-end.vercel.app",
+        "www.power-ai-front-end.vercel.app",
+        "example.com",
+        "www.example.com"
     ]
 }

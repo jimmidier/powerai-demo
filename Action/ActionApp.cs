@@ -65,22 +65,17 @@ public class ActionApp : TeamsActivityHandler
             };
         }
 
-        var client = new GraphClient(tokenResponse.Token);
-        var chatMessages = await client.GetChatMessagesAsync(turnContext.Activity.Conversation.Id, cancellationToken);
-        
-        var formattedMessages = ChatMessageHelper.FormatChatMessages(chatMessages);
-        var suggestedReplies = await ChatMessageHelper.GetSuggestedRepliesAsync(chatMessages);
-
         return new MessagingExtensionActionResponse
         {
             Task = new TaskModuleContinueResponse
             {
                 Value = new TaskModuleTaskInfo
                 {
-                    Card = GetChatMessagesCardWithSuggestions(formattedMessages, suggestedReplies),
+                    // Url = "https://example.com/",
+                    Url = "https://power-ai-front-end.vercel.app/",
                     Height = 500,
                     Width = 600,
-                    Title = "聊天记录与回复建议",
+                    Title = "Power AI",
                 },
             },
         };
