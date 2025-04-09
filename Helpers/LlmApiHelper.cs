@@ -8,11 +8,13 @@ public static class LlmApiHelper
 {
     private const string PowerAiApiUrl = "https://powerai-api-service.azurewebsites.net/api/suggest-reply?code=KYKd6CEk0ySK07rKYjbS8xkpMLBHotd5T8JVPaRYF9xkAzFuaQKDCQ%3D%3D";
     
-    public static async Task<List<string>> GetSuggestedRepliesAsync(string chatHistoryJson, double temperature = 0.7, int maxTokens = 800)
+    public static async Task<List<string>> GetSuggestedRepliesAsync(string chatHistoryJson, string currentUserName, int suggestedReplyCount = 3, double temperature = 0.7, int maxTokens = 800)
     {
         var requestObject = new
         {
             chatHistory = JsonSerializer.Deserialize<JsonElement>(chatHistoryJson).GetProperty("chatHistory"),
+            currentUserName = currentUserName,
+            suggestedReplyCount = suggestedReplyCount,
             parameters = new { temperature, maxTokens }
         };
         

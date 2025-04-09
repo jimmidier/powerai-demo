@@ -1,6 +1,4 @@
-using Microsoft.AspNetCore.Identity;
 using Microsoft.Graph;
-using Microsoft.Graph.Me.Chats;
 using Microsoft.Graph.Models;
 using Microsoft.Kiota.Abstractions.Authentication;
 
@@ -22,11 +20,29 @@ public class GraphClient : IAccessTokenProvider
 
     public AllowedHostsValidator AllowedHostsValidator => throw new NotImplementedException();
 
-    public async Task<List<ChatMessage>> GetChatMessagesAsync(string conversationId, CancellationToken cancellationToken = default)
+    public async Task<List<ChatMessage>> GetChatMessagesAsync(string conversationId, CancellationToken cancellationToken = default, int top =5)
     {
         var client = GetAuthenticatedClient();
-        var messageResponse = await client.Me.Chats[conversationId].Messages.GetAsync(cancellationToken: cancellationToken);
+
+        var messageResponse = await client.Me.Chats[conversationId].Messages.GetAsync(requestConfiguration => {
+            requestConfiguration.QueryParameters.Top = top;
+        }, cancellationToken);
         return messageResponse.Value;
+    }
+
+    public async Task<User> GetCurrentUserAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var client = GetAuthenticatedClient();
+            var user = await client.Me.GetAsync(cancellationToken: cancellationToken);
+            return user;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"获取用户信息时出错: {ex.Message}");
+            return null;
+        }
     }
 
     public Task<string> GetAuthorizationTokenAsync(Uri uri, Dictionary<string, object> additionalAuthenticationContext = null, CancellationToken cancellationToken = default)

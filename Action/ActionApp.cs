@@ -63,16 +63,31 @@ public class ActionApp : TeamsActivityHandler
                     },
                 },
             };
-        }
+        }        
+        int messageCount = 5;
+        int suggestedReplyCount = 3;
+        var client = new GraphClient(tokenResponse.Token);
+
+        var chatMessages = await client.GetChatMessagesAsync(turnContext.Activity.Conversation.Id, cancellationToken, messageCount);
+        var formattedMessages = ChatMessageHelper.FormatChatMessages(chatMessages);
+
+        string chatCode = CodeCacheHelper.GenerateCode(turnContext.Activity.Conversation.Id);
+        CodeCacheHelper.StoreMessages(chatCode, chatMessages);
+
+        var currentUser = await client.GetCurrentUserAsync(cancellationToken);
+        
+        Console.WriteLine($"生成的短代码: {chatCode}");
+        Console.WriteLine($"当前用户: {currentUser.DisplayName}");
+        
+        var suggestedReplies = await ChatMessageHelper.GetSuggestedRepliesAsync(chatMessages, currentUser.DisplayName, suggestedReplyCount);
 
         return new MessagingExtensionActionResponse
         {
             Task = new TaskModuleContinueResponse
-            {
-                Value = new TaskModuleTaskInfo
+            {                Value = new TaskModuleTaskInfo
                 {
                     // Url = "https://example.com/",
-                    Url = "https://power-ai-front-end.vercel.app/",
+                    Url = $"https://power-ai-front-end.vercel.app/?code={chatCode}&username={Uri.EscapeDataString(currentUser.DisplayName)}",
                     Height = 500,
                     Width = 600,
                     Title = "Power AI",
