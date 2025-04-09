@@ -36,7 +36,7 @@ public class ActionApp : TeamsActivityHandler
                 },
             };
         }        
-        int messageCount = 5;
+        int messageCount = 10;
         var client = new GraphClient(tokenResponse.Token);
 
         var chatMessages = await client.GetChatMessagesAsync(turnContext.Activity.Conversation.Id, cancellationToken, messageCount);
