@@ -4,6 +4,18 @@ using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Integration.AspNet.Core;
 using Microsoft.Bot.Connector.Authentication;
 using System.Text.Json;
+using DotNetEnv;
+
+string envPath = Path.Combine(Directory.GetCurrentDirectory(), "env", ".env.local");
+if (File.Exists(envPath))
+{
+    Env.Load(envPath);
+    Console.WriteLine($"已加载环境变量文件: {envPath}");
+}
+else
+{
+    Console.WriteLine($"警告: 环境变量文件不存在: {envPath}");
+}
 
 var builder = WebApplication.CreateBuilder(args);
 

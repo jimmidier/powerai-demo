@@ -4,7 +4,6 @@ appPackage/build
 env/.env.*.user
 env/.env.local
 appsettings.Development.json
-appsettings.json
 .deployment
 appsettings.TestTool.json
 

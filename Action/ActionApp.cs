@@ -45,17 +45,18 @@ public class ActionApp : TeamsActivityHandler
         CodeCacheHelper.StoreMessages(chatCode, chatMessages);
 
         var currentUser = await client.GetCurrentUserAsync(cancellationToken);
+          string frontendUrl = Environment.GetEnvironmentVariable("FRONTEND_URL") ?? "https://power-ai-front-end.vercel.app";
         
         Console.WriteLine($"生成的短代码: {chatCode}");
         Console.WriteLine($"当前用户: {currentUser.DisplayName}");
-        Console.WriteLine($"Url: https://power-ai-front-end.vercel.app/?code={chatCode}&username={Uri.EscapeDataString(currentUser.DisplayName)}");
+        Console.WriteLine($"Url: {frontendUrl}/?code={chatCode}&username={Uri.EscapeDataString(currentUser.DisplayName)}");
         return new MessagingExtensionActionResponse
         {
             Task = new TaskModuleContinueResponse
             {                
                 Value = new TaskModuleTaskInfo
                 {
-                    Url = $"https://power-ai-front-end.vercel.app/?code={chatCode}&username={Uri.EscapeDataString(currentUser.DisplayName)}",
+                    Url = $"{frontendUrl}/?code={chatCode}&username={Uri.EscapeDataString(currentUser.DisplayName)}",
                     Height = 500,
                     Width = 600,
                     Title = "Power AI",
