@@ -26,6 +26,9 @@ public class SuggestionsController : ControllerBase
 
         var suggestedReplies = await ChatMessageHelper.GetSuggestedRepliesAsync(chatMessages, userName, suggestedReplyCount);
         
-        return new JsonResult(suggestedReplies);
+        return new JsonResult(suggestedReplies, new System.Text.Json.JsonSerializerOptions
+        {
+            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+        });
     }
 }

@@ -48,7 +48,7 @@ public class ActionApp : TeamsActivityHandler
         
         Console.WriteLine($"生成的短代码: {chatCode}");
         Console.WriteLine($"当前用户: {currentUser.DisplayName}");
-
+        Console.WriteLine($"Url: https://power-ai-front-end.vercel.app/?code={chatCode}&username={Uri.EscapeDataString(currentUser.DisplayName)}");
         return new MessagingExtensionActionResponse
         {
             Task = new TaskModuleContinueResponse
