@@ -4,18 +4,6 @@ using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Integration.AspNet.Core;
 using Microsoft.Bot.Connector.Authentication;
 using System.Text.Json;
-using DotNetEnv;
-
-string envPath = Path.Combine(Directory.GetCurrentDirectory(), "env", ".env.local");
-if (File.Exists(envPath))
-{
-    Env.Load(envPath);
-    Console.WriteLine($"已加载环境变量文件: {envPath}");
-}
-else
-{
-    Console.WriteLine($"警告: 环境变量文件不存在: {envPath}");
-}
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,7 +22,6 @@ builder.Services.AddHttpContextAccessor();
 
 // Create the Bot Framework Authentication to be used with the Bot Adapter.
 var config = builder.Configuration.Get<ConfigOptions>();
-Console.WriteLine($"-----cofig: {JsonSerializer.Serialize(config, new JsonSerializerOptions{WriteIndented = true})}");
 builder.Configuration["MicrosoftAppType"] = config.BOT_TYPE;
 builder.Configuration["MicrosoftAppId"] = config.BOT_ID;
 builder.Configuration["MicrosoftAppPassword"] = config.BOT_PASSWORD;

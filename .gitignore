@@ -2,7 +2,7 @@
 build
 appPackage/build
 env/.env.*.user
-env/.env.local
+env/.env.dev
 appsettings.Development.json
 .deployment
 appsettings.TestTool.json

@@ -66,9 +66,9 @@ public static class ChatMessageHelper
         return JsonSerializer.Serialize(resultObject, options);
     }
 
-    public static async Task<List<string>> GetSuggestedRepliesAsync(IEnumerable<ChatMessage> messages, string currentUserName, int suggestedReplyCount = 3, double temperature = 0.7, int maxTokens = 800)
+    public static async Task<List<string>> GetSuggestedRepliesAsync(string baseUrl, IEnumerable<ChatMessage> messages, string currentUserName, int suggestedReplyCount = 3, double temperature = 0.7, int maxTokens = 800)
     {
         var jsonContent = ConvertToJsonFormat(messages);
-        return await LlmApiHelper.GetSuggestedRepliesAsync(jsonContent, currentUserName, suggestedReplyCount, temperature, maxTokens);
+        return await LlmApiHelper.GetSuggestedRepliesAsync(baseUrl, jsonContent, currentUserName, suggestedReplyCount, temperature, maxTokens);
     }
 }

@@ -5,8 +5,10 @@ namespace TestTeamsApp.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class SuggestionsController : ControllerBase
+public class SuggestionsController(IConfiguration configuration) : ControllerBase
 {
+    private readonly IConfiguration _configuration = configuration;
+
     [HttpGet]
     public async Task<IActionResult> GetSuggestions(string code, string userName)
     {
@@ -24,7 +26,8 @@ public class SuggestionsController : ControllerBase
         }        
         int suggestedReplyCount = 3;
 
-        var suggestedReplies = await ChatMessageHelper.GetSuggestedRepliesAsync(chatMessages, userName, suggestedReplyCount);
+        var baseUri = _configuration["API_SERVER_URL"];
+        var suggestedReplies = await ChatMessageHelper.GetSuggestedRepliesAsync(baseUri, chatMessages, userName, suggestedReplyCount);
         
         return new JsonResult(suggestedReplies, new System.Text.Json.JsonSerializerOptions
         {

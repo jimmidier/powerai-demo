@@ -10,6 +10,10 @@ param botDisplayName string
 
 param botId string
 param tenantId string
+@secure()
+param botPassword string
+param apiServerUrl string
+param frontEndUrl string
 
 param serverfarmsName string = resourceBaseName
 param webAppName string = resourceBaseName
@@ -53,8 +57,20 @@ resource webApp 'Microsoft.Web/sites@2021-02-01' = {
           value: tenantId
         }
         {
+          name: 'BOT_PASSWORD'
+          value: botPassword
+        }
+        {
           name: 'BOT_TYPE'
           value: 'MultiTenant'
+        }
+        {
+          name: 'API_SERVER_URL'
+          value: apiServerUrl
+        }
+        {
+          name: 'FRONTEND_URL'
+          value: frontEndUrl
         }
       ]
       ftpsState: 'FtpsOnly'

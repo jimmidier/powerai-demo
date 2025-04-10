@@ -1,20 +1,17 @@
 using System.Text.Json;
 using System.Text;
-using System.Net.Http;
-using Microsoft.Extensions.Configuration;
 
 namespace TestTeamsApp.Helpers;
 
 public static class LlmApiHelper
 {
-    private static string PowerAiApiUrl => Environment.GetEnvironmentVariable("API_SERVER_URL") ?? "";
-    public static async Task<List<string>> GetSuggestedRepliesAsync(string chatHistoryJson, string currentUserName, int suggestedReplyCount = 3, double temperature = 0.7, int maxTokens = 800)
+    public static async Task<List<string>> GetSuggestedRepliesAsync(string baseUri, string chatHistoryJson, string currentUserName, int suggestedReplyCount = 3, double temperature = 0.7, int maxTokens = 800)
     {
         var requestObject = new
         {
             chatHistory = JsonSerializer.Deserialize<JsonElement>(chatHistoryJson).GetProperty("chatHistory"),
-            currentUserName = currentUserName,
-            suggestedReplyCount = suggestedReplyCount,
+            currentUserName,
+            suggestedReplyCount,
             parameters = new { temperature, maxTokens }
         };
         
@@ -24,7 +21,7 @@ public static class LlmApiHelper
         
         try
         {
-            var response = await httpClient.PostAsync(PowerAiApiUrl, content);
+            var response = await httpClient.PostAsync(baseUri, content);
             response.EnsureSuccessStatusCode();
             var responseBody = await response.Content.ReadAsStringAsync();
             return ParseSuggestedReplies(responseBody);

@@ -14,8 +14,17 @@
       "botId": {
         "value": "${{BOT_ID}}"
       },
+      "botPassword": {
+        "value": "${{BOT_PASSWORD}}"
+      },
       "tenantId": {
         "value": "${{BOT_TENANT_ID}}"
+      },
+      "apiServerUrl": {
+        "value": "${{API_SERVER_URL}}"
+      },
+      "frontEndUrl": {
+        "value": "${{FRONTEND_URL}}"
       }
     }
   }

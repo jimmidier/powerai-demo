@@ -7,15 +7,17 @@ using TestTeamsApp.Helpers;
 
 namespace TestTeamsApp.Action;
 
-public class ActionApp : TeamsActivityHandler
+public class ActionApp(IConfiguration configuration) : TeamsActivityHandler
 {
+    private readonly IConfiguration _configuration = configuration;
+
     protected override async Task<MessagingExtensionActionResponse> OnTeamsMessagingExtensionFetchTaskAsync(ITurnContext<IInvokeActivity> turnContext, MessagingExtensionAction action, CancellationToken cancellationToken)
     {
         var tokenResponse = await GetTokenResponse(turnContext, action.State, cancellationToken);
         if (tokenResponse == null || string.IsNullOrEmpty(tokenResponse.Token))
         {
             var signInLink = await GetSignInLinkAsync(turnContext, cancellationToken).ConfigureAwait(false);
-            
+
             return new MessagingExtensionActionResponse
             {
                 ComposeExtension = new MessagingExtensionResult
@@ -35,25 +37,25 @@ public class ActionApp : TeamsActivityHandler
                     },
                 },
             };
-        }        
+        }
         int messageCount = 10;
         var client = new GraphClient(tokenResponse.Token);
 
         var chatMessages = await client.GetChatMessagesAsync(turnContext.Activity.Conversation.Id, cancellationToken, messageCount);
-        
-        string chatCode = CodeCacheHelper.GenerateCode(turnContext.Activity.Conversation.Id);
+
+        var chatCode = CodeCacheHelper.GenerateCode(turnContext.Activity.Conversation.Id);
         CodeCacheHelper.StoreMessages(chatCode, chatMessages);
 
         var currentUser = await client.GetCurrentUserAsync(cancellationToken);
-          string frontendUrl = Environment.GetEnvironmentVariable("FRONTEND_URL") ?? "https://power-ai-front-end.vercel.app";
-        
+        var frontendUrl = _configuration["FRONTEND_URL"];
+
         Console.WriteLine($"生成的短代码: {chatCode}");
         Console.WriteLine($"当前用户: {currentUser.DisplayName}");
         Console.WriteLine($"Url: {frontendUrl}/?code={chatCode}&username={Uri.EscapeDataString(currentUser.DisplayName)}");
         return new MessagingExtensionActionResponse
         {
             Task = new TaskModuleContinueResponse
-            {                
+            {
                 Value = new TaskModuleTaskInfo
                 {
                     Url = $"{frontendUrl}/?code={chatCode}&username={Uri.EscapeDataString(currentUser.DisplayName)}",
