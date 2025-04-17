@@ -13,6 +13,9 @@ public class ActionApp(IConfiguration configuration) : TeamsActivityHandler
 
     protected override async Task<MessagingExtensionActionResponse> OnTeamsMessagingExtensionFetchTaskAsync(ITurnContext<IInvokeActivity> turnContext, MessagingExtensionAction action, CancellationToken cancellationToken)
     {
+        var tokenStartTime = DateTime.Now;
+        Console.WriteLine($"开始获取token: {tokenStartTime:yyyy-MM-dd HH:mm:ss.fff}");
+
         var tokenResponse = await GetTokenResponse(turnContext, action.State, cancellationToken);
         if (tokenResponse == null || string.IsNullOrEmpty(tokenResponse.Token))
         {
@@ -38,7 +41,15 @@ public class ActionApp(IConfiguration configuration) : TeamsActivityHandler
                 },
             };
         }
-        int messageCount = 10;
+
+        var tokenEndTime = DateTime.Now;
+        Console.WriteLine($"获取token结束: {tokenEndTime:yyyy-MM-dd HH:mm:ss.fff}");
+        Console.WriteLine($"获取token总耗时: {(tokenEndTime - tokenStartTime).TotalMilliseconds} 毫秒");
+
+        var chatStartTime = DateTime.Now;
+        Console.WriteLine($"开始创建Graph Client并获取聊天记录: {chatStartTime:yyyy-MM-dd HH:mm:ss.fff}");
+        int messageCount = 20;
+
         var client = new GraphClient(tokenResponse.Token);
 
         var chatMessages = await client.GetChatMessagesAsync(turnContext.Activity.Conversation.Id, cancellationToken, messageCount);
@@ -47,6 +58,11 @@ public class ActionApp(IConfiguration configuration) : TeamsActivityHandler
         CodeCacheHelper.StoreMessages(chatCode, chatMessages);
 
         var currentUser = await client.GetCurrentUserAsync(cancellationToken);
+
+        var chatEndTime = DateTime.Now;
+        Console.WriteLine($"获取聊天记录结束: {chatEndTime:yyyy-MM-dd HH:mm:ss.fff}");
+        Console.WriteLine($"获取聊天记录总耗时: {(chatEndTime - chatStartTime).TotalMilliseconds} 毫秒");
+
         var frontendUrl = _configuration["FRONTEND_URL"];
 
         Console.WriteLine($"生成的短代码: {chatCode}");
@@ -59,8 +75,8 @@ public class ActionApp(IConfiguration configuration) : TeamsActivityHandler
                 Value = new TaskModuleTaskInfo
                 {
                     Url = $"{frontendUrl}/?code={chatCode}&username={Uri.EscapeDataString(currentUser.DisplayName)}",
-                    Height = 500,
-                    Width = 600,
+                    Height = 540,
+                    Width = 800,
                     Title = "Power AI",
                 },
             },

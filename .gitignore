@@ -30,3 +30,4 @@ bld/
 devTools
 
 .vs/
+global.json

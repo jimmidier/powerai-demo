@@ -66,9 +66,14 @@ public static class ChatMessageHelper
         return JsonSerializer.Serialize(resultObject, options);
     }
 
-    public static async Task<List<string>> GetSuggestedRepliesAsync(string baseUrl, IEnumerable<ChatMessage> messages, string currentUserName, int suggestedReplyCount = 3, double temperature = 0.7, int maxTokens = 800)
-    {
+    public static async Task<List<string>> GetSuggestedRepliesAsync(string baseUrl, IEnumerable<ChatMessage> messages, string currentUserName, int suggestedReplyCount = 3, string? userIntent = null, double temperature = 0.7, int maxTokens = 800)
+    {   
+        var processStartTime = DateTime.Now;
+        Console.WriteLine($"开始预处理聊天记录: {processStartTime:yyyy-MM-dd HH:mm:ss.fff}");
         var jsonContent = ConvertToJsonFormat(messages);
-        return await LlmApiHelper.GetSuggestedRepliesAsync(baseUrl, jsonContent, currentUserName, suggestedReplyCount, temperature, maxTokens);
+        var proposeEndTime = DateTime.Now;
+        Console.WriteLine($"预处理聊天记录结束: {proposeEndTime:yyyy-MM-dd HH:mm:ss.fff}");
+        Console.WriteLine($"预处理聊天记录总耗时: {(proposeEndTime - processStartTime).TotalMilliseconds} 毫秒");
+        return await LlmApiHelper.GetSuggestedRepliesAsync(baseUrl, jsonContent, currentUserName, suggestedReplyCount, userIntent, temperature, maxTokens);
     }
 }

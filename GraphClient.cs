@@ -20,14 +20,23 @@ public class GraphClient : IAccessTokenProvider
 
     public AllowedHostsValidator AllowedHostsValidator => throw new NotImplementedException();
 
-    public async Task<List<ChatMessage>> GetChatMessagesAsync(string conversationId, CancellationToken cancellationToken = default, int top =5)
+    public async Task<List<ChatMessage>> GetChatMessagesAsync(string conversationId, CancellationToken cancellationToken = default, int top = 5)
     {
         var client = GetAuthenticatedClient();
 
-        var messageResponse = await client.Me.Chats[conversationId].Messages.GetAsync(requestConfiguration => {
+        var messageResponse = await client.Me.Chats[conversationId].Messages.GetAsync(requestConfiguration =>
+        {
             requestConfiguration.QueryParameters.Top = top;
         }, cancellationToken);
         return messageResponse.Value;
+    }
+
+    public async Task<ChatMessage> GetSingleChatMessagesAsync(string conversationId, string messageId, CancellationToken cancellationToken = default)
+    {
+        var client = GetAuthenticatedClient();
+
+        var messageResponse = await client.Me.Chats[conversationId].Messages[messageId].GetAsync(null, cancellationToken);
+        return messageResponse;
     }
 
     public async Task<User> GetCurrentUserAsync(CancellationToken cancellationToken = default)
