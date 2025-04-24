@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@microsoft/teamsapp-cli": "^3.1.0",
+    "@microsoft/teamsfx-cli": "^2.1.2"
+  }
+}

@@ -14,7 +14,7 @@ public class ActionApp(IConfiguration configuration) : TeamsActivityHandler
     protected override async Task<MessagingExtensionActionResponse> OnTeamsMessagingExtensionFetchTaskAsync(ITurnContext<IInvokeActivity> turnContext, MessagingExtensionAction action, CancellationToken cancellationToken)
     {
         var tokenStartTime = DateTime.Now;
-        Console.WriteLine($"开始获取token: {tokenStartTime:yyyy-MM-dd HH:mm:ss.fff}");
+        // Console.WriteLine($"开始获取token: {tokenStartTime:yyyy-MM-dd HH:mm:ss.fff}");
 
         var tokenResponse = await GetTokenResponse(turnContext, action.State, cancellationToken);
         if (tokenResponse == null || string.IsNullOrEmpty(tokenResponse.Token))
@@ -41,40 +41,61 @@ public class ActionApp(IConfiguration configuration) : TeamsActivityHandler
                 },
             };
         }
+        // var tokenEndTime = DateTime.Now;
+        // Console.WriteLine($"获取token结束: {tokenEndTime:yyyy-MM-dd HH:mm:ss.fff}");
+        // Console.WriteLine($"获取token总耗时: {(tokenEndTime - tokenStartTime).TotalMilliseconds} 毫秒");
 
-        var tokenEndTime = DateTime.Now;
-        Console.WriteLine($"获取token结束: {tokenEndTime:yyyy-MM-dd HH:mm:ss.fff}");
-        Console.WriteLine($"获取token总耗时: {(tokenEndTime - tokenStartTime).TotalMilliseconds} 毫秒");
 
-        var chatStartTime = DateTime.Now;
-        Console.WriteLine($"开始创建Graph Client并获取聊天记录: {chatStartTime:yyyy-MM-dd HH:mm:ss.fff}");
+        // var chatStartTime = DateTime.Now;
+        // Console.WriteLine($"开始创建Graph Client并获取聊天记录: {chatStartTime:yyyy-MM-dd HH:mm:ss.fff}");
+
         int messageCount = 20;
 
         var client = new GraphClient(tokenResponse.Token);
 
         var chatMessages = await client.GetChatMessagesAsync(turnContext.Activity.Conversation.Id, cancellationToken, messageCount);
 
-        var chatCode = CodeCacheHelper.GenerateCode(turnContext.Activity.Conversation.Id);
-        CodeCacheHelper.StoreMessages(chatCode, chatMessages);
+        var targetMessage = "";
+        var targetUser = "";
+        if (action.MessagePayload != null)
+        {
+            targetMessage = ChatMessageHelper.StripHtmlTags(action.MessagePayload.Body.Content ?? "");
+            targetUser = action.MessagePayload.From.User.DisplayName ?? "";
+            // Console.WriteLine($"从消息上下文调用，目标消息发送者: {targetUser}");
+            // Console.WriteLine($"从消息上下文调用，目标消息内容: {targetMessage}");
+        }
 
         var currentUser = await client.GetCurrentUserAsync(cancellationToken);
+        var userName = currentUser.DisplayName ?? "";
 
-        var chatEndTime = DateTime.Now;
-        Console.WriteLine($"获取聊天记录结束: {chatEndTime:yyyy-MM-dd HH:mm:ss.fff}");
-        Console.WriteLine($"获取聊天记录总耗时: {(chatEndTime - chatStartTime).TotalMilliseconds} 毫秒");
+        var chatCode = CodeCacheHelper.GenerateCode(turnContext.Activity.Conversation.Id);
+
+        var chatContext = new ChatContext<List<Microsoft.Graph.Models.ChatMessage>>(
+            chatMessages,
+            targetUser,
+            targetMessage,
+            userName
+        );
+        CodeCacheHelper.StoreContext(chatCode, chatContext);
+
+        // var chatEndTime = DateTime.Now;
+        // Console.WriteLine($"获取聊天记录结束: {chatEndTime:yyyy-MM-dd HH:mm:ss.fff}");
+        // Console.WriteLine($"获取聊天记录总耗时: {(chatEndTime - chatStartTime).TotalMilliseconds} 毫秒");
 
         var frontendUrl = _configuration["FRONTEND_URL"];
 
         Console.WriteLine($"生成的短代码: {chatCode}");
-        Console.WriteLine($"当前用户: {currentUser.DisplayName}");
-        Console.WriteLine($"Url: {frontendUrl}/?code={chatCode}&username={Uri.EscapeDataString(currentUser.DisplayName)}");
+
+        var urlWithParams = $"{frontendUrl}/?code={chatCode}";
+        Console.WriteLine($"Url: {urlWithParams}");
+
         return new MessagingExtensionActionResponse
         {
             Task = new TaskModuleContinueResponse
             {
                 Value = new TaskModuleTaskInfo
                 {
-                    Url = $"{frontendUrl}/?code={chatCode}&username={Uri.EscapeDataString(currentUser.DisplayName)}",
+                    Url = urlWithParams,
                     Height = 540,
                     Width = 800,
                     Title = "Power AI",

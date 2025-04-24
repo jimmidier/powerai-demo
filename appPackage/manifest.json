@@ -14,12 +14,12 @@
         "outline": "outline.png"
     },
     "name": {
-        "short": "TestTeamsApp${{APP_NAME_SUFFIX}}",
-        "full": "full name for TestTeamsApp"
+        "short": "PowerAI",
+        "full": "PowerAI"
     },
     "description": {
-        "short": "Short description of TestTeamsApp",
-        "full": "Full description of TestTeamsApp"
+        "short": "Short description of PowerAI",
+        "full": "Full description of PowerAI"
     },
     "accentColor": "#FFFFFF",
     "bots": [],
@@ -29,11 +29,7 @@
             "commands": [
                 {
                     "id": "getSuggestions",
-                    "context": [
-                        "compose",
-                        "message",
-                        "commandBox"
-                    ],
+                    "context": ["compose", "message", "commandBox"],
                     "description": "Command to run action to get suggestions from Compose Box",
                     "title": "Get Suggestions",
                     "type": "action",
@@ -44,12 +40,9 @@
     ],
     "configurableTabs": [],
     "staticTabs": [],
-    "permissions": [
-        "identity",
-        "messageTeamMembers"
-    ],
+    "permissions": ["identity", "messageTeamMembers"],
     "webApplicationInfo": {
-        "id": "bd9c5ae3-7a5a-4d20-9e63-51d475badde3",
+        "id": "${{BOT_ID}}",
         "resource": "https://graph.microsoft.com/chat.read"
     },
     "validDomains": [
@@ -57,6 +50,8 @@
         "token.botframework.com",
         "power-ai-front-end.vercel.app",
         "www.power-ai-front-end.vercel.app",
+        "power-ai-front-end-git-localenv-zenowang-sswcomaus-projects.vercel.app",
+        "www.power-ai-front-end-git-localenv-zenowang-sswcomaus-projects.vercel.app",
         "example.com",
         "www.example.com"
     ]

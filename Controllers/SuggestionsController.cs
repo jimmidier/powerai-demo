@@ -16,9 +16,6 @@ public class SuggestionsController(IConfiguration configuration) : ControllerBas
         [JsonPropertyName("code")]
         public required string Code { get; set; }
 
-        [JsonPropertyName("userName")]
-        public required string UserName { get; set; }
-
         [JsonPropertyName("userIntent")]
         public string? UserIntent { get; set; }
     }
@@ -26,35 +23,33 @@ public class SuggestionsController(IConfiguration configuration) : ControllerBas
     [HttpPost]
     public async Task<IActionResult> GetSuggestions([FromBody] SuggestionRequest request)
     {
-        if (string.IsNullOrEmpty(request.Code) || string.IsNullOrEmpty(request.UserName))
+        if (string.IsNullOrEmpty(request.Code))
         {
-            return BadRequest("Code and userName are required parameters");
+            return BadRequest("Code is required");
         }
 
-        var userName = Uri.UnescapeDataString(request.UserName);
-
-        var chatMessages = CodeCacheHelper.GetMessages<List<ChatMessage>>(request.Code);
-        if (chatMessages == null)
+        var chatContext = CodeCacheHelper.GetContext<List<ChatMessage>>(request.Code);
+        if (chatContext == null)
         {
-            return NotFound("No chat messages found for the provided code");
-        }        
+            return NotFound("No chat context found for the provided code");
+        }
+
         int suggestedReplyCount = 3;
 
         var baseUri = _configuration["API_SERVER_URL"];
 
-        var suggestionsStartTime = DateTime.Now;
-        Console.WriteLine($"开始获取建议回复: {suggestionsStartTime:yyyy-MM-dd HH:mm:ss.fff}");
+        // var suggestionsStartTime = DateTime.Now;
+        // Console.WriteLine($"开始获取建议回复: {suggestionsStartTime:yyyy-MM-dd HH:mm:ss.fff}");
 
         var suggestedReplies = await ChatMessageHelper.GetSuggestedRepliesAsync(
-            baseUri, 
-            chatMessages, 
-            userName, 
+            baseUri,
+            chatContext,
             suggestedReplyCount,
             request.UserIntent);
-        
-        var suggestionsEndTime = DateTime.Now;
-        Console.WriteLine($"获取建议回复结束: {suggestionsEndTime:yyyy-MM-dd HH:mm:ss.fff}");
-        Console.WriteLine($"获取建议回复总耗时: {(suggestionsEndTime - suggestionsStartTime).TotalMilliseconds} 毫秒");
+
+        // var suggestionsEndTime = DateTime.Now;
+        // Console.WriteLine($"获取建议回复结束: {suggestionsEndTime:yyyy-MM-dd HH:mm:ss.fff}");
+        // Console.WriteLine($"获取建议回复总耗时: {(suggestionsEndTime - suggestionsStartTime).TotalMilliseconds} 毫秒");
 
         return Ok(suggestedReplies);
     }

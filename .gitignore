@@ -31,3 +31,4 @@ devTools
 
 .vs/
 global.json
+node_modules/
