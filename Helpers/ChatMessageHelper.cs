@@ -65,7 +65,7 @@ public static class ChatMessageHelper
         return JsonSerializer.Serialize(resultObject, options);
     }
 
-    public static async Task<ApiResponse> GetSuggestedRepliesAsync(string baseUrl, ChatContext<List<ChatMessage>> context, int suggestedReplyCount = 3, string? userIntent = null, double temperature = 0.7, int maxTokens = 800)
+    public static async Task<ApiResponse> GetSuggestedRepliesAsync(string baseUrl, ChatContext context, int suggestedReplyCount = 3, string? userIntent = null, double temperature = 0.7, int maxTokens = 800)
     {
         // var processStartTime = DateTime.Now;
         // Console.WriteLine($"开始预处理聊天记录: {processStartTime:yyyy-MM-dd HH:mm:ss.fff}");

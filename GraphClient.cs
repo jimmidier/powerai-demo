@@ -20,7 +20,7 @@ public class GraphClient : IAccessTokenProvider
 
     public AllowedHostsValidator AllowedHostsValidator => throw new NotImplementedException();
 
-    public async Task<List<ChatMessage>> GetChatMessagesAsync(string conversationId, CancellationToken cancellationToken = default, int top = 5)
+    public async Task<List<ChatMessage>> GetChatMessagesAsync(string conversationId, int top = 5, CancellationToken cancellationToken = default)
     {
         var client = GetAuthenticatedClient();
 

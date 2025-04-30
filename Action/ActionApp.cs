@@ -53,7 +53,7 @@ public class ActionApp(IConfiguration configuration) : TeamsActivityHandler
 
         var client = new GraphClient(tokenResponse.Token);
 
-        var chatMessages = await client.GetChatMessagesAsync(turnContext.Activity.Conversation.Id, cancellationToken, messageCount);
+        var chatMessages = await client.GetChatMessagesAsync(turnContext.Activity.Conversation.Id, messageCount, cancellationToken);
 
         var targetMessage = "";
         var targetUser = "";
@@ -70,7 +70,7 @@ public class ActionApp(IConfiguration configuration) : TeamsActivityHandler
 
         var chatCode = CodeCacheHelper.GenerateCode(turnContext.Activity.Conversation.Id);
 
-        var chatContext = new ChatContext<List<Microsoft.Graph.Models.ChatMessage>>(
+        var chatContext = new ChatContext(
             chatMessages,
             targetUser,
             targetMessage,

@@ -7,9 +7,11 @@ namespace TestTeamsApp.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class SuggestionsController(IConfiguration configuration) : ControllerBase
+public class SuggestionsController(IConfiguration configuration, IHostEnvironment hostEnvironment) : ControllerBase
 {
     private readonly IConfiguration _configuration = configuration;
+
+    private readonly IHostEnvironment _hostEnvironment = hostEnvironment;
 
     public class SuggestionRequest
     {
@@ -28,10 +30,17 @@ public class SuggestionsController(IConfiguration configuration) : ControllerBas
             return BadRequest("Code is required");
         }
 
-        var chatContext = CodeCacheHelper.GetContext<List<ChatMessage>>(request.Code);
+        var chatContext = CodeCacheHelper.GetContext(request.Code);
         if (chatContext == null)
         {
-            return NotFound("No chat context found for the provided code");
+            if (!_hostEnvironment.IsProduction())
+            {
+                chatContext = new ChatContext(ChatContext.MockMessages, "Zeno Wang [SSW]", "确认一下代码变动", "Jim Zheng [SSW]");
+            }
+            else
+            {
+                return NotFound("No chat context found for the provided code");
+            }
         }
 
         int suggestedReplyCount = 3;
