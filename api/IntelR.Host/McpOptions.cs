@@ -7,7 +7,7 @@ public class McpOptions
 
 public class GitHubMcpServerOptions
 {
-    public const string Name = "GitHub";
+    public const string Name = "GitHubMcp";
     
     public string GitHubPat { get; set; } = string.Empty;
 }

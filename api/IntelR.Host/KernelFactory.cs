@@ -40,9 +40,11 @@ public class KernelFactory(Kernel kernel, ILoggerFactory loggerFactory, IOptions
         );
 
         var tools = await mcpClient.ListToolsAsync();
-    
+        var allowedToolNames = new HashSet<string> { "get_issue", "get_issue_comments", "list_issues", "search_issues" };
+        var filteredTools = tools.Where(tool => allowedToolNames.Contains(tool.Name)).ToList();
+
 #pragma warning disable SKEXP0001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
-        _kernel.Plugins.AddFromFunctions(GitHubMcpServerOptions.Name, tools.Select(tool => tool.AsKernelFunction()));
+        _kernel.Plugins.AddFromFunctions(GitHubMcpServerOptions.Name, filteredTools.Select(tool => tool.AsKernelFunction()));
 #pragma warning restore SKEXP0001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
 
         return _kernel;
