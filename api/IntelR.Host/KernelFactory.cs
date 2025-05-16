@@ -5,10 +5,10 @@ using ModelContextProtocol.Protocol.Transport;
 
 namespace IntelR.Host;
 
-public class KernelFactory(Kernel kernel, LoggerFactory loggerFactory, IOptions<McpOptions> mcpOptions)
+public class KernelFactory(Kernel kernel, ILoggerFactory loggerFactory, IOptions<McpOptions> mcpOptions)
 {
     private readonly Kernel _kernel = kernel;
-    private readonly LoggerFactory _loggerFactory = loggerFactory;
+    private readonly ILoggerFactory _loggerFactory = loggerFactory;
     private readonly McpOptions _mcpOptions = mcpOptions.Value;
 
     public async Task<Kernel> GetKernelAsync()
