@@ -34,33 +34,48 @@ public static class PromptTemplates
         - Keep responses brief but complete, typically 1-3 sentences per suggestion.
 
         Guidelines for topic and response quantity:
-        - Notice the given context for GitHub, if it's empty, generate exactly 3 sets of topics and replies, if not, generate 1 set of topic and reply based on the context and prioritize them, and then generate 2 more sets based on the guidelines above.
+        - Note the provided GitHub context. If it's empty, generate exactly 3 sets of topics and replies. If not, first generate 1 set of topic and reply based on the context and prioritize it, then generate 2 more sets based on the general guidelines above.
+        - If it is GitHub issue related, include the issue url link in the {{One-sentence summary}}.
 
         Format your response exactly as follows:
         === TOPICS ===
-        TOPIC 1: [Short topic name] | [One-sentence summary]
-        TOPIC 2: [Short topic name] | [One-sentence summary]
-        ...
+        TOPIC 1: {{Short topic name}} | {{One-sentence summary}}
+        TOPIC 2: {{Short topic name}} | {{One-sentence summary}}
+        TOPIC 2: {{Short topic name}} | {{One-sentence summary}}
+        Note: If the topic is based on the GitHub context, include "(🌐GitHub)" before the topic name. If not, no extra prefix needed.
         === REPLIES ===
-        1. [First reply - direct and professional in ENGLISH only]
-        2. [Second reply - similarly formatted in ENGLISH only]
-        ...
+        1. {{First reply}}
+        2. {{Second reply}}
+        2. {{Third reply}}
     """;
 
     public const string GitHubMcpPrompt = """
-        You are an AI assistant specializing in GitHub-related tasks within the current authenticated user.
+        You are an AI assistant analyzing conversations to detect GitHub intents under the current authenticated user. Respond ONLY when GitHub context is confirmed.
         Your task is to analyze conversation to determine if the users are discussing GitHub-related topics.
+        The current authenticated user has these GitHub repositories: SSW.People, powerai-demo, Personal-Blog
 
-        In the given conversation, focus on provided "CURRENT USER" and "CONVERSATION HISTORY". If you determine that the conversation is related to GitHub, generate an LLM prompt on behalf of the current user. This prompt is intended to express the current user's intent to fetch information from GitHub.
+        Instruction
 
-        Example: If the conversation shows the other user is asking the current user about the status of a 500 bug on SSW website, it means the current user probably intend to search for related GitHub issue in "SSW.Website" repository, so you should generate a prompt like "Search for GitHub issues in the repository SSW.Website of the current authenticated user that are related to a 500 bug in SSW.Website repository".
+        Analyze "CURRENT USER" and "CONVERSATION HISTORY" and look for GitHub-related intents with keywords like "GitHub", "issues", "bugs", etc.
 
-        Note that the prompt should always express the search scope in this format:
-        GitHub [issue/PR/code] in the repository [repository name] of the current authenticated user
+        If GitHub-related:
+        
+        Example
+        You determine that the current user intends to search for recent bugs about memory leaks in people profiles. The generated prompt should be:
+        ```
+        {
+            "IsGitHubRelated": boolean,
+            "Prompt": "Search for GitHub issues in the repository SSW.People of the current authenticated user regarding memory leaks. Format response as "
+        }
+        ```
 
-        If the conversation is GitHub related, the result prompt should also include the following instruction:
-        - Organize the result in JSON format with the following fields:
-            - IsSuccess: [true/false] - indicates if the search was successful
-            - Result: [string] - the result of the search
+        Generate a prompt to express the user's intent to fetch information from user's own GitHub repository. Query must include 'is:issue'.
+        Result example
+        ```
+        {
+            "IsGitHubRelated": boolean,
+            "Prompt": string
+        }
+        ```
     """;
 }

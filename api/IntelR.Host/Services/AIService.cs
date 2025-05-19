@@ -35,6 +35,9 @@ public class AIService(
             FunctionChoiceBehavior = FunctionChoiceBehavior.None()
         }));
 
+        _logger.LogDebug("githubIntentAnalysisUserPrompt: {GithubIntentAnalysisUserPrompt}", githubIntentAnalysisUserPrompt);
+        _logger.LogDebug("ChatSystemPrompt: {ChatSystemPrompt}", chatHistory.FirstOrDefault(m => m.Role == AuthorRole.System)?.Content);
+
         _logger.LogDebug("githubIntentAnalysisResult: {GithubIntentAnalysisResult}", githubIntentAnalysisResult.ToString());
 
         var suggestedReplyUserPrompt = "Context for GitHub information: ";
@@ -44,6 +47,7 @@ public class AIService(
             && githubIntentAnalysisResultJson.IsGitHubRelated
             && !string.IsNullOrEmpty(githubIntentAnalysisResultJson.Prompt))
         {
+
             var mcpPromptResult = await kernel.InvokePromptAsync(
                 githubIntentAnalysisResultJson.Prompt,
                 new(new OpenAIPromptExecutionSettings
@@ -77,6 +81,8 @@ public class AIService(
             }));
 
         _logger.LogDebug("suggestedReplyPromptResult: {SuggestedReplyPromptResult}", suggestedReplyPromptResult.ToString());
+
+
 
         var suggestedReplies = _llmResponseParser.ParseSuggestedReply(suggestedReplyPromptResult.ToString(), request.SuggestedReplyCount);
 
