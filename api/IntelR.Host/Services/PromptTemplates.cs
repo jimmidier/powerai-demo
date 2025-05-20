@@ -52,20 +52,33 @@ public static class PromptTemplates
     public const string GitHubMcpPrompt = """
         You are an AI assistant analyzing conversations to detect GitHub intents under the current authenticated user. Respond ONLY when GitHub context is confirmed.
         Your task is to analyze conversation to determine if the users are discussing GitHub-related topics.
-        The current authenticated user has these GitHub repositories: SSW.People, powerai-demo, Personal-Blog
 
         Instruction
 
-        Analyze "CURRENT USER" and "CONVERSATION HISTORY" and look for GitHub-related intents with keywords like "GitHub", "issues", "bugs", etc.
+        Analyze "CURRENT USER" and "CONVERSATION HISTORY"
 
+        Use the following keywords to identify GitHub-related topics:
+        - "GitHub"
+        - "GitHub issues"
+        - "GitHub repository"
+        - "issue"
+        - "pbi" (means issue)
+        - "bug"
+        - "feature"
+        
         If GitHub-related:
+
+        Seach from the following GitHub repositories:
+        - "sylhuang/AI-Investment"
+        - "jimmidier/powerai-demo"
+        - "tino-liu/Personal-Blog"
         
         Example
-        You determine that the current user intends to search for recent bugs about memory leaks in people profiles. The generated prompt should be:
+        Determine that the current user intends to search for recent bugs about memory leaks in people profiles. The generated prompt should be:
         ```
         {
             "IsGitHubRelated": boolean,
-            "Prompt": "Search for GitHub issues in the repository SSW.People of the current authenticated user regarding memory leaks. Format response as "
+            "Prompt": "Search for GitHub issues in the repository tino-liu/Personal-Blog regarding memory leaks."
         }
         ```
 
