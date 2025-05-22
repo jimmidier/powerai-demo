@@ -34,7 +34,7 @@ provision:
     # Generate runtime appsettings to JSON file
     - uses: file/createOrUpdateJsonFile
       with:
-          target: ../TestTeamsApp/appsettings.Development.json
+          target: ./appsettings.Development.json
           content:
               BOT_TYPE: "MultiTenant"
               BOT_ID: ${{BOT_ID}}

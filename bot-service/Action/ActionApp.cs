@@ -4,18 +4,21 @@ using Microsoft.Bot.Schema;
 using Microsoft.Bot.Schema.Teams;
 using Microsoft.Bot.Connector.Authentication;
 using TestTeamsApp.Helpers;
+using TestTeamsApp.RemoteApis;
+using IntelR.Shared;
 
 namespace TestTeamsApp.Action;
 
-public class ActionApp(IConfiguration configuration) : TeamsActivityHandler
+public class ActionApp(IIntelRApi intelRApi, IConfiguration configuration) : TeamsActivityHandler
 {
+    private readonly IIntelRApi _intelRApi = intelRApi;
     private readonly IConfiguration _configuration = configuration;
 
-    protected override async Task<MessagingExtensionActionResponse> OnTeamsMessagingExtensionFetchTaskAsync(ITurnContext<IInvokeActivity> turnContext, MessagingExtensionAction action, CancellationToken cancellationToken)
+    protected override async Task<MessagingExtensionActionResponse> OnTeamsMessagingExtensionFetchTaskAsync(
+        ITurnContext<IInvokeActivity> turnContext,
+        MessagingExtensionAction action,
+        CancellationToken cancellationToken)
     {
-        var tokenStartTime = DateTime.Now;
-        // Console.WriteLine($"开始获取token: {tokenStartTime:yyyy-MM-dd HH:mm:ss.fff}");
-
         var tokenResponse = await GetTokenResponse(turnContext, action.State, cancellationToken);
         if (tokenResponse == null || string.IsNullOrEmpty(tokenResponse.Token))
         {
@@ -28,26 +31,19 @@ public class ActionApp(IConfiguration configuration) : TeamsActivityHandler
                     Type = "auth",
                     SuggestedActions = new MessagingExtensionSuggestedAction
                     {
-                        Actions = new List<CardAction>
-                                {
-                                    new CardAction
-                                    {
-                                        Type = ActionTypes.OpenUrl,
-                                        Value = signInLink,
-                                        Title = "Bot Service OAuth",
-                                    },
-                                },
+                        Actions =
+                        [
+                            new CardAction
+                            {
+                                Type = ActionTypes.OpenUrl,
+                                Value = signInLink,
+                                Title = "Bot Service OAuth",
+                            },
+                        ],
                     },
                 },
             };
         }
-        // var tokenEndTime = DateTime.Now;
-        // Console.WriteLine($"获取token结束: {tokenEndTime:yyyy-MM-dd HH:mm:ss.fff}");
-        // Console.WriteLine($"获取token总耗时: {(tokenEndTime - tokenStartTime).TotalMilliseconds} 毫秒");
-
-
-        // var chatStartTime = DateTime.Now;
-        // Console.WriteLine($"开始创建Graph Client并获取聊天记录: {chatStartTime:yyyy-MM-dd HH:mm:ss.fff}");
 
         int messageCount = 20;
 
@@ -61,33 +57,30 @@ public class ActionApp(IConfiguration configuration) : TeamsActivityHandler
         {
             targetMessage = ChatMessageHelper.StripHtmlTags(action.MessagePayload.Body.Content ?? "");
             targetUser = action.MessagePayload.From.User.DisplayName ?? "";
-            // Console.WriteLine($"从消息上下文调用，目标消息发送者: {targetUser}");
-            // Console.WriteLine($"从消息上下文调用，目标消息内容: {targetMessage}");
         }
 
         var currentUser = await client.GetCurrentUserAsync(cancellationToken);
         var userName = currentUser.DisplayName ?? "";
 
-        var chatCode = CodeCacheHelper.GenerateCode(turnContext.Activity.Conversation.Id);
+        var generateReplyRequest = new GenerateReplyRequest
+        {
+            ChatId = turnContext.Activity.Conversation.Id,
+            ChatHistory = [.. chatMessages.Select(m => new UserChatMessage
+            {
+                Sender = m.From?.User?.DisplayName ?? "Unknown User",
+                Content = ChatMessageHelper.StripHtmlTags(m.Body?.Content),
+                Timestamp = m.CreatedDateTime
+            })],
+            CurrentUserName = userName,
+            TargetUser = targetUser,
+            TargetMessage = targetMessage,
+        };
 
-        var chatContext = new ChatContext(
-            chatMessages,
-            targetUser,
-            targetMessage,
-            userName
-        );
-        CodeCacheHelper.StoreContext(chatCode, chatContext);
-
-        // var chatEndTime = DateTime.Now;
-        // Console.WriteLine($"获取聊天记录结束: {chatEndTime:yyyy-MM-dd HH:mm:ss.fff}");
-        // Console.WriteLine($"获取聊天记录总耗时: {(chatEndTime - chatStartTime).TotalMilliseconds} 毫秒");
+        var chatCode = await _intelRApi.RegisterConversationAsync(generateReplyRequest);
 
         var frontendUrl = _configuration["FRONTEND_URL"];
 
-        Console.WriteLine($"生成的短代码: {chatCode}");
-
         var urlWithParams = $"{frontendUrl}/?code={chatCode}";
-        Console.WriteLine($"Url: {urlWithParams}");
 
         return new MessagingExtensionActionResponse
         {
@@ -98,20 +91,20 @@ public class ActionApp(IConfiguration configuration) : TeamsActivityHandler
                     Url = urlWithParams,
                     Height = 540,
                     Width = 800,
-                    Title = "Power AI",
+                    Title = "Intel R",
                 },
             },
         };
     }
 
-    private async Task<string> GetSignInLinkAsync(ITurnContext turnContext, CancellationToken cancellationToken)
+    private static async Task<string> GetSignInLinkAsync(ITurnContext turnContext, CancellationToken cancellationToken)
     {
         var userTokenClient = turnContext.TurnState.Get<UserTokenClient>();
         var resource = await userTokenClient.GetSignInResourceAsync("BotTeamsAuthADv2", turnContext.Activity as Activity, null, cancellationToken).ConfigureAwait(false);
         return resource.SignInLink;
     }
 
-    private async Task<TokenResponse> GetTokenResponse(ITurnContext<IInvokeActivity> turnContext, string state, CancellationToken cancellationToken)
+    private static async Task<TokenResponse> GetTokenResponse(ITurnContext<IInvokeActivity> turnContext, string state, CancellationToken cancellationToken)
     {
         var magicCode = string.Empty;
 

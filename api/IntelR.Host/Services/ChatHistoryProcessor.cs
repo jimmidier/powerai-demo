@@ -1,4 +1,4 @@
-using IntelR.Host.Models;
+using IntelR.Shared;
 using Microsoft.SemanticKernel.ChatCompletion;
 
 namespace IntelR.Host.Services;

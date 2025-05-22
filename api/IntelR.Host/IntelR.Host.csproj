@@ -14,4 +14,8 @@
     <PackageReference Include="ModelContextProtocol" Version="0.1.0-preview.13" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\shared\IntelR.Shared\IntelR.Shared.csproj" />
+  </ItemGroup>
+
 </Project>

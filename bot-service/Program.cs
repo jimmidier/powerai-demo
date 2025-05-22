@@ -4,6 +4,8 @@ using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Integration.AspNet.Core;
 using Microsoft.Bot.Connector.Authentication;
 using System.Text;
+using Refit;
+using TestTeamsApp.RemoteApis;
 
 Console.OutputEncoding = Encoding.UTF8;
 
@@ -19,12 +21,14 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddControllers();
-builder.Services.AddHttpClient("WebClient", client => client.Timeout = TimeSpan.FromSeconds(600));
 builder.Services.AddHttpContextAccessor();
+builder.Services
+    .AddRefitClient<IIntelRApi>()
+    .ConfigureHttpClient(c => c.BaseAddress = new Uri(builder.Configuration["API_SERVER_URL"]!));
 
 // Create the Bot Framework Authentication to be used with the Bot Adapter.
 var config = builder.Configuration.Get<ConfigOptions>();
-builder.Configuration["MicrosoftAppType"] = config.BOT_TYPE;
+builder.Configuration["MicrosoftAppType"] = config!.BOT_TYPE;
 builder.Configuration["MicrosoftAppId"] = config.BOT_ID;
 builder.Configuration["MicrosoftAppPassword"] = config.BOT_PASSWORD;
 builder.Configuration["MicrosoftAppTenantId"] = config.BOT_TENANT_ID;

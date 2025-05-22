@@ -9,7 +9,6 @@ public static class IntelRServiceCollectionExtensions
     public static IServiceCollection ConfigureIntelR(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddTransient<ChatHistoryProcessor>();
-        services.AddTransient<LlmResponseParser>();
         services.AddTransient<AIService>();
 
         return services;

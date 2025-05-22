@@ -1,9 +1,9 @@
-namespace IntelR.Host.Models;
+namespace IntelR.Shared;
 
 [Serializable]
 public class SuggestedReply
 {
-    public List<SuggestedReplyItem> Suggestions { get; set; } = [];
+    public List<string> Suggestions { get; set; } = [];
     public List<SuggestedTopicItem> Topics { get; set; } = [];
 }
 
@@ -17,6 +17,6 @@ public class SuggestedReplyItem
 [Serializable]
 public class SuggestedTopicItem
 {
-    public string TopicName { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
     public string Summary { get; set; } = string.Empty;
 }

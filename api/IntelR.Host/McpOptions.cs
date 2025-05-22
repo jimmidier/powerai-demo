@@ -8,6 +8,10 @@ public class McpOptions
 public class GitHubMcpServerOptions
 {
     public const string Name = "GitHubMcp";
-    
-    public string GitHubPat { get; set; } = string.Empty;
+
+    public string Pat { get; set; } = string.Empty;
+
+    public string Identity { get; set; } = string.Empty;
+
+    public List<string> AllowedRepositories { get; set; } = [];
 }

@@ -33,14 +33,14 @@ public class KernelFactory(Kernel kernel, ILoggerFactory loggerFactory, IOptions
                     ],
                 EnvironmentVariables = new Dictionary<string, string>
                 {
-                    { "GITHUB_PERSONAL_ACCESS_TOKEN", _mcpOptions.GitHubServer.GitHubPat }
+                    { "GITHUB_PERSONAL_ACCESS_TOKEN", _mcpOptions.GitHubServer.Pat }
                 }
             }),
             loggerFactory: _loggerFactory
         );
 
         var tools = await mcpClient.ListToolsAsync();
-        var allowedToolNames = new HashSet<string> { "get_issue", "get_issue_comments", "list_issues", "search_issues" };
+        var allowedToolNames = new HashSet<string> { "get_me", "get_issue", "list_issues", "search_issues" };
         var filteredTools = tools.Where(tool => allowedToolNames.Contains(tool.Name)).ToList();
 
 #pragma warning disable SKEXP0001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.

@@ -51,7 +51,7 @@ public class SuggestionsController(IConfiguration configuration, IHostEnvironmen
         // Console.WriteLine($"开始获取建议回复: {suggestionsStartTime:yyyy-MM-dd HH:mm:ss.fff}");
 
         var suggestedReplies = await ChatMessageHelper.GetSuggestedRepliesAsync(
-            baseUri,
+            baseUri!,
             chatContext,
             suggestedReplyCount,
             request.UserIntent);

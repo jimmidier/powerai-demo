@@ -5,7 +5,7 @@ using Microsoft.Graph.Models;
 
 namespace TestTeamsApp.Helpers;
 
-public class ChatContext
+public class ChatContext(IEnumerable<ChatMessage> messages, string targetUser = "", string targetMessage = "", string currentUser = "")
 {
     public static readonly List<ChatMessage> MockMessages = [
         new ChatMessage
@@ -82,18 +82,10 @@ public class ChatContext
         },
     ];
 
-    public List<ChatMessage> Messages { get; set; }
-    public string TargetUser { get; set; }
-    public string TargetMessage { get; set; }
-    public string CurrentUser { get; set; }
-
-    public ChatContext(IEnumerable<ChatMessage> messages, string targetUser = "", string targetMessage = "", string currentUser = "")
-    {
-        Messages = [.. messages];
-        TargetUser = targetUser;
-        TargetMessage = targetMessage;
-        CurrentUser = currentUser;
-    }
+    public List<ChatMessage> Messages { get; set; } = [.. messages];
+    public string TargetUser { get; set; } = targetUser;
+    public string TargetMessage { get; set; } = targetMessage;
+    public string CurrentUser { get; set; } = currentUser;
 }
 
 public class CodeCacheHelper

@@ -7,29 +7,13 @@ namespace TestTeamsApp.Helpers;
 
 public static class ChatMessageHelper
 {
-    public static List<string> FormatChatMessages(IEnumerable<ChatMessage> messages)
-    {
-        var filteredMessages = messages
-            .Where(m => m.MessageType?.ToString() == "Message")
-            .OrderBy(m => m.CreatedDateTime)
-            .ToList();
-
-        var formattedMessages = new List<string>();
-
-        foreach (var message in filteredMessages)
-        {
-            var displayName = message.From?.User?.DisplayName ?? "Unknown User";
-            var plainText = StripHtmlTags(message.Body.Content);
-            formattedMessages.Add($"{displayName}: {plainText}");
-        }
-
-        return formattedMessages;
-    }
-
-    public static string StripHtmlTags(string html)
+    public static string StripHtmlTags(string? html)
     {
         if (string.IsNullOrEmpty(html))
+        {
             return string.Empty;
+        }
+        
         var plainText = Regex.Replace(html, "<[^>]*>", string.Empty);
         plainText = Regex.Replace(plainText, "&nbsp;", " ");
         plainText = Regex.Replace(plainText, "&amp;", "&");
@@ -67,17 +51,12 @@ public static class ChatMessageHelper
 
     public static async Task<ApiResponse> GetSuggestedRepliesAsync(string baseUrl, ChatContext context, int suggestedReplyCount = 3, string? userIntent = null, double temperature = 0.7, int maxTokens = 800)
     {
-        // var processStartTime = DateTime.Now;
-        // Console.WriteLine($"开始预处理聊天记录: {processStartTime:yyyy-MM-dd HH:mm:ss.fff}");
         var chatMessages = context.Messages;
         var currentUserName = context.CurrentUser;
         var targetUserName = context.TargetUser;
         var targetMessage = context.TargetMessage;
 
         var jsonContent = ConvertToJsonFormat(chatMessages);
-        // var proposeEndTime = DateTime.Now;
-        // Console.WriteLine($"预处理聊天记录结束: {proposeEndTime:yyyy-MM-dd HH:mm:ss.fff}");
-        // Console.WriteLine($"预处理聊天记录总耗时: {(proposeEndTime - processStartTime).TotalMilliseconds} 毫秒");
 
         return await LlmApiHelper.GetSuggestedRepliesAsync(
             baseUrl,
