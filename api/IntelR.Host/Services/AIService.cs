@@ -19,7 +19,7 @@ public class AIService(
     private readonly McpOptions _mcpOptions = mcpOptions.Value;
     private readonly ILogger<AIService> _logger = logger;
 
-    public async Task<SuggestedReply> GetSuggestedReplyAsync(GenerateReplyRequest request)
+    public async Task<SuggestedTopics> GenerateTopicsAsync(RegisterConversationRequest request)
     {
         var kernel = await _kernelFactory.GetKernelAsync();
 
@@ -31,24 +31,122 @@ public class AIService(
         var githubIntentAnalysisUserPrompt = gitHubIntentAnalysisChatHistory.FirstOrDefault(m => m.Role == AuthorRole.User)?.Content ?? string.Empty;
         var githubIntentAnalysisSystemPrompt = gitHubIntentAnalysisChatHistory.FirstOrDefault(m => m.Role == AuthorRole.System)?.Content;
 
-        var githubIntentAnalysisKernelArguments = new KernelArguments(new OpenAIPromptExecutionSettings
+        var githubIntentAnalysisResultModel = await InvokePromptAsync<GitHubIntentAnalysis>(
+            kernel,
+            githubIntentAnalysisUserPrompt,
+            githubIntentAnalysisSystemPrompt,
+            promptName: "GitHub Intent Analysis");
+
+        var generateTopicsChatHistory = _chatHistoryProcessor.ConvertToOpenAIMessages(
+            request,
+            PromptTemplates.TopicBasePrompt
+        );
+
+        var generateTopicsUserPrompt = generateTopicsChatHistory.FirstOrDefault(m => m.Role == AuthorRole.User)?.Content ?? string.Empty;
+        var generateTopicsSystemPrompt = generateTopicsChatHistory.FirstOrDefault(m => m.Role == AuthorRole.System)?.Content;
+
+        generateTopicsUserPrompt += $"Analysis for GitHub intent: {githubIntentAnalysisResultModel.IsGitHubRelated}";
+
+        var generateTopicsPromptResult = await InvokePromptAsync<SuggestedTopics>(
+            kernel,
+            generateTopicsUserPrompt,
+            generateTopicsSystemPrompt,
+            promptName: "Generate Topics");
+        generateTopicsPromptResult.Topics.ForEach(t =>
         {
-            ChatSystemPrompt = githubIntentAnalysisSystemPrompt,
-            ResponseFormat = typeof(GitHubIntentAnalysis),
-            FunctionChoiceBehavior = FunctionChoiceBehavior.None()
+            if (t.GitHubIntentAnalysis.IsGitHubRelated)
+            {
+                t.GitHubIntentAnalysis.Prompt = githubIntentAnalysisResultModel.Prompt;
+            }
         });
 
-        var githubIntentAnalysisResult = (await kernel.InvokePromptAsync(
-            githubIntentAnalysisUserPrompt,
-            githubIntentAnalysisKernelArguments))
-            .ToString();
+        return generateTopicsPromptResult;
+    }
 
-        _logger.LogDebug("githubIntentAnalysisResult: {GithubIntentAnalysisResult}", githubIntentAnalysisResult);
+    public async Task<SuggestedReply> GenerateRepliesAsync(RegisterConversationRequest conversation, SuggestedTopicItem topic)
+    {
+        var kernel = await _kernelFactory.GetKernelAsync();
+
+        string? mcpResult = null;
+
+        if (topic.GitHubIntentAnalysis.IsGitHubRelated && !string.IsNullOrEmpty(topic.GitHubIntentAnalysis.Prompt))
+        {
+            var mcpPromptResult = await InvokePromptAsync<GitHubMcpResponse>(
+                kernel,
+                topic.GitHubIntentAnalysis.Prompt,
+                PromptTemplates.GitHubMcpSystemPrompt,
+                true,
+                promptName: "GitHub MCP Query");
+
+            if (mcpPromptResult?.IsSuccess ?? false)
+            {
+                mcpResult = mcpPromptResult!.Result;
+            }
+        }
+
+        var suggestedReplyUserPrompt = mcpResult ?? "(None)";
+
+        var chatHistory = _chatHistoryProcessor.ConvertToOpenAIMessages(
+            conversation,
+            PromptTemplates.SuggestedReplyBasePrompt
+        );
+
+        var userPrompt = chatHistory.FirstOrDefault(m => m.Role == AuthorRole.User)?.Content ?? string.Empty;
+        var systemPrompt = chatHistory.FirstOrDefault(m => m.Role == AuthorRole.System)?.Content;
+        userPrompt += $"""
+
+            Topic: {topic.Name} - {topic.Summary}
+            Context for GitHub information: {suggestedReplyUserPrompt}
+        """;
+
+        var reply = await InvokePromptAsync<BasicSuggestedReply>(
+            kernel,
+            userPrompt,
+            systemPrompt,
+            promptName: "Generate Suggested Reply");
+
+        var result = new SuggestedReply(reply);
+        if (topic.GitHubIntentAnalysis.IsGitHubRelated)
+        {
+            // TODO: This is only for test purpose
+            result.Metadata.Actions.Add(new SuggestedReplyAction
+            {
+                Name = "YakShaver",
+                Type = SuggestedReplyActionType.Link,
+                Url = "https://yakshaver.com/api/testonly"
+            });
+            
+            result.Metadata.Actions.Add(new SuggestedReplyAction
+            {
+                Name = "Email",
+                Type = SuggestedReplyActionType.Link,
+                Url = "mailto:info@example.com?subject=Test%20Only&body=Test%20message"
+            });
+        }
+
+        return result;
+    }
+
+    public async Task<SuggestedTopicsAndReplies> GenerateTopicAndRepliesAsync(RegisterConversationRequest request)
+    {
+        var kernel = await _kernelFactory.GetKernelAsync();
+
+        var gitHubIntentAnalysisChatHistory = _chatHistoryProcessor.ConvertToOpenAIMessages(
+            request,
+            PromptTemplates.GetGitHubMcpPrePrompt(_mcpOptions.GitHubServer.Identity, _mcpOptions.GitHubServer.AllowedRepositories)
+        );
+
+        var githubIntentAnalysisUserPrompt = gitHubIntentAnalysisChatHistory.FirstOrDefault(m => m.Role == AuthorRole.User)?.Content ?? string.Empty;
+        var githubIntentAnalysisSystemPrompt = gitHubIntentAnalysisChatHistory.FirstOrDefault(m => m.Role == AuthorRole.System)?.Content;
+
+        var githubIntentAnalysisResultModel = await InvokePromptAsync<GitHubIntentAnalysis>(
+            kernel,
+            githubIntentAnalysisUserPrompt,
+            githubIntentAnalysisSystemPrompt);
 
         var suggestedReplyUserPrompt = "Context for GitHub information: ";
         string? mcpResult = null;
 
-        var githubIntentAnalysisResultModel = JsonSerializer.Deserialize<GitHubIntentAnalysis>(githubIntentAnalysisResult.ToString());
         if (githubIntentAnalysisResultModel != null
             && githubIntentAnalysisResultModel.IsGitHubRelated
             && !string.IsNullOrEmpty(githubIntentAnalysisResultModel.Prompt))
@@ -61,7 +159,6 @@ public class AIService(
                     ChatSystemPrompt = PromptTemplates.GitHubMcpSystemPrompt,
                     FunctionChoiceBehavior = FunctionChoiceBehavior.Auto(options: new() { RetainArgumentTypes = true }),
                     ResponseFormat = typeof(GitHubMcpResponse),
-                    Temperature = 0,
                     MaxTokens = 1500
                 }));
 #pragma warning restore SKEXP0001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
@@ -82,7 +179,7 @@ public class AIService(
 
         var suggestedReplyChatHistory = _chatHistoryProcessor.ConvertToOpenAIMessages(
             request,
-            PromptTemplates.SuggestedReplyBasePrompt
+            PromptTemplates.TopicAndSuggestedReplyBasePrompt
         );
 
         suggestedReplyUserPrompt += suggestedReplyChatHistory.FirstOrDefault(m => m.Role == AuthorRole.User)?.Content ?? string.Empty;
@@ -94,13 +191,43 @@ public class AIService(
             {
                 FunctionChoiceBehavior = FunctionChoiceBehavior.None(),
                 ChatSystemPrompt = suggestedReplySystemPrompt,
-                ResponseFormat = typeof(SuggestedReply),
-                Temperature = 0,
+                ResponseFormat = typeof(SuggestedTopicsAndReplies),
                 MaxTokens = 1500
             }));
 
-        var suggestedReplyResultModel = JsonSerializer.Deserialize<SuggestedReply>(suggestedReplyPromptResult.ToString());
+        var suggestedReplyResultModel = JsonSerializer.Deserialize<SuggestedTopicsAndReplies>(suggestedReplyPromptResult.ToString());
 
         return suggestedReplyResultModel ?? new();
+    }
+
+    private async Task<T> InvokePromptAsync<T>(
+        Kernel kernel,
+        string userPrompt,
+        string? systemPrompt,
+        bool autoFunctionChoice = false,
+        int maxTokens = 1500,
+        string? promptName = null)
+    {
+#pragma warning disable SKEXP0001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+        var kernelArguments = new KernelArguments(new OpenAIPromptExecutionSettings
+        {
+            ChatSystemPrompt = systemPrompt,
+            ResponseFormat = typeof(T),
+            FunctionChoiceBehavior = autoFunctionChoice
+                ? FunctionChoiceBehavior.Auto(options: new() { RetainArgumentTypes = true })
+                : FunctionChoiceBehavior.None(),
+            MaxTokens = maxTokens
+        });
+#pragma warning restore SKEXP0001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+
+        var result = (await kernel.InvokePromptAsync(
+            userPrompt,
+            kernelArguments))
+            .ToString();
+
+        promptName ??= typeof(T).Name;
+        _logger.LogInformation("Prompt [{PromptName}] invocation result: {Result}", promptName, result.ToString());
+
+        return JsonSerializer.Deserialize<T>(result.ToString()) ?? default!;
     }
 }

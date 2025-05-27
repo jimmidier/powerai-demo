@@ -1,4 +1,4 @@
-namespace IntelR.Host.Models;
+namespace IntelR.Shared;
 
 public class GitHubIntentAnalysis
 {

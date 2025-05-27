@@ -62,7 +62,7 @@ public class ActionApp(IIntelRApi intelRApi, IConfiguration configuration) : Tea
         var currentUser = await client.GetCurrentUserAsync(cancellationToken);
         var userName = currentUser.DisplayName ?? "";
 
-        var generateReplyRequest = new GenerateReplyRequest
+        var generateReplyRequest = new RegisterConversationRequest
         {
             ChatId = turnContext.Activity.Conversation.Id,
             ChatHistory = [.. chatMessages.Select(m => new UserChatMessage

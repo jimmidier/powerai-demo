@@ -1,22 +1,48 @@
 namespace IntelR.Shared;
 
 [Serializable]
-public class SuggestedReply
+public class SuggestedTopicsAndReplies
 {
     public List<string> Suggestions { get; set; } = [];
     public List<SuggestedTopicItem> Topics { get; set; } = [];
 }
 
 [Serializable]
-public class SuggestedReplyItem
+public class BasicSuggestedReply
 {
-    public int ReplyNumber { get; set; }
     public string Content { get; set; } = string.Empty;
 }
 
 [Serializable]
-public class SuggestedTopicItem
+public class SuggestedReply : BasicSuggestedReply
+{
+    public SuggestedReplyItemMetadata Metadata { get; set; } = new();
+
+    public SuggestedReply() { }
+
+    public SuggestedReply(BasicSuggestedReply basicReply)
+    {
+        Content = basicReply.Content;
+    }
+}
+
+[Serializable]
+public class SuggestedReplyItemMetadata
+{
+    public List<SuggestedReplyAction> Actions { get; set; } = [];
+}
+
+[Serializable]
+public class SuggestedReplyAction
 {
     public string Name { get; set; } = string.Empty;
-    public string Summary { get; set; } = string.Empty;
+
+    public SuggestedReplyActionType Type { get; set; }
+
+    public string Url { get; set; } = string.Empty;
+}
+
+public enum SuggestedReplyActionType
+{
+    Link
 }
