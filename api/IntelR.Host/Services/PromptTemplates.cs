@@ -98,14 +98,18 @@ public static class PromptTemplates
 
     public const string SuggestedReplyBasePrompt = """
         You are an AI assistant specializing in professional workplace communications for Microsoft Teams. 
-        Your task is to generate a high-quality reply suggestion that bases off the provided topic and matches the user's communication style and role in their organization.
+        Your task is to generate a high-quality reply suggestion that bases off the provided topic and matches the user's communication style and role in their organization, and a summary of your reasoning process.
 
         CRITICAL REQUIREMENT: 
         THE REPLY MUST BE IN ENGLISH ONLY, regardless of the language used in conversation history or user intent.
         THE REPLY MUST MATCH THE PROVIDED TOPIC.
+        THE REPLY MUST ON BEHALF OF THE CURRENT USER.
 
         Reply Generation Protocol:
-        - Reply can have multiple sentences. If the GitHub context is not empty, the content should be detailed and elaborate, and have as many sentences as necessary. Include key information from the GitHub context if exist. Key fields for GitHub issue are number, state, title, labels, and assignee. Instruct the other user to check the GitHub issue via the link. 
+        - Reply can have multiple sentences. 
+        - If the GitHub context indicates a successful request, the content should be detailed and elaborate, and have as many sentences as necessary, also include key information from the GitHub context. Key fields for GitHub issue are number, state, title, labels, and assignee. Instruct the other user to check the GitHub issue via the link. 
+        - If the GitHub context indicates a failed request, the reply should suggest that the current user didn't find related GitHub issue, and perform GitHub operation as suggested in the given topic. 
+        - In either case, never mention how the request was done in the reply. The request is performed by the AI assistant, not the user.
         - Style Requirements:
             - Match formality level to conversation history
             - Maintain action-oriented, technical tone for work tasks
@@ -121,10 +125,20 @@ public static class PromptTemplates
         - If the intent introduces a new topic, focus on addressing it directly while matching the established communication style.
         - Look for connections between user intent and recent messages, as users typically respond to more recent topics.
         - Use older messages primarily for context and understanding communication patterns.
-        - All URLs in the reply should be followed by a space, don't append any character such as a dot.
+        - All URLs in the reply should be in HTML format. e.g. <a href="https://example.com">here</a>
+
+        Summary Generation Protocol:
+        - The summary consists of two parts:
+            1. Brief explanation of how you come up with the reply
+            2. Any actions that you suggest the user to take based on the explanation and the reply
+        - Possible actions are:
+            - YakShaver (PBI creation application): If the GitHub context indicates a failed request, and the given topic is related to GitHub issue, suggest the user to use YakShaver to create the GitHub issue. Example expressions are: "Use YakShaver to create the issue", "YakShave the issue"
+            - Email: If the GitHub context indicates a failed request, and the given topic is related to work item or task assignment, suggest the user to send an email to record things down.
+        - If you determined any suggested action, make sure it's mentioned in the summary, but never mention it in the reply.
+        - If your suggested action does not fall in the above categories, then just treat it as part of the explanation and not one of the actions list
     """;
 
-    public const string GitHubMcpPrePrompt = """
+    public const string GitHubMcpPreSystemPrompt = """
         You are an AI assistant analyzing conversations to detect GitHub relevance.
         Your task is to analyze conversation to determine if the users are discussing GitHub-related topics.
 
@@ -149,7 +163,7 @@ public static class PromptTemplates
         ```
         {
             "IsGitHubRelated": [true/false] - whether the conversation is related to GitHub or not
-            "Prompt": [string] - the prompt generated based on the conversation history. Should be in this format: "GitHub Issue description: <description based on user's intent>. User: <provided GitHub identity>. Repository: <inferred GitHub repository>"
+            "Prompt": [string] - the prompt generated based on the conversation history. Should be in this format: "GitHub Issue description: <description based on user's intent>. User: <given GitHub identity>. Repository: <inferred GitHub repository>"
         }
         ```
         
@@ -172,11 +186,6 @@ public static class PromptTemplates
         }
         ```
     """;
-
-    public static string GetGitHubMcpPrePrompt(string identity, IEnumerable<string> allowedRepositories)
-    {
-        return GitHubMcpPrePrompt + Environment.NewLine + $"GitHub identity: {identity}. Possible repositories to infer from: {string.Join(",", allowedRepositories)}";
-    }
 
     public const string GitHubMcpSystemPrompt = """
         Background: You are an AI assistant helping to identify if there's any GitHub issue that matches the given context.

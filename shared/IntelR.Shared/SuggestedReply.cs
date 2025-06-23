@@ -8,27 +8,49 @@ public class SuggestedTopicsAndReplies
 }
 
 [Serializable]
-public class BasicSuggestedReply
+public class SuggestedReplies
 {
+    public List<SuggestedReplyItem> Replies { get; set; } = [];
+
+    public SuggestedReplies() { }
+
+    public SuggestedReplies(List<SuggestedReplyItem> replies)
+    {
+        Replies = replies ?? [];
+    }
+}
+
+[Serializable]
+public class PromptSuggestedReplyItem
+{
+    public string Summary { get; set; } = string.Empty;
+    public List<string> SuggestedActions { get; set; } = [];
     public string Content { get; set; } = string.Empty;
 }
 
 [Serializable]
-public class SuggestedReply : BasicSuggestedReply
+public class SuggestedReplyItem
 {
     public SuggestedReplyItemMetadata Metadata { get; set; } = new();
 
-    public SuggestedReply() { }
+    public string Content { get; set; } = string.Empty;
 
-    public SuggestedReply(BasicSuggestedReply basicReply)
+    public SuggestedReplyItem() { }
+
+    public SuggestedReplyItem(PromptSuggestedReplyItem promptReply)
     {
-        Content = basicReply.Content;
+        Metadata = new SuggestedReplyItemMetadata
+        {
+            Summary = promptReply.Summary
+        };
+        Content = promptReply.Content;
     }
 }
 
 [Serializable]
 public class SuggestedReplyItemMetadata
 {
+    public string Summary { get; set; } = string.Empty;
     public List<SuggestedReplyAction> Actions { get; set; } = [];
 }
 

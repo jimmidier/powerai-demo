@@ -91,7 +91,7 @@ public class ActionApp(IIntelRApi intelRApi, IConfiguration configuration) : Tea
                     Url = urlWithParams,
                     Height = 540,
                     Width = 800,
-                    Title = "Intel R",
+                    Title = "",
                 },
             },
         };

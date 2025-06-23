@@ -14,12 +14,12 @@
         "outline": "outline.png"
     },
     "name": {
-        "short": "PowerAI",
-        "full": "PowerAI"
+        "short": "IntelliR",
+        "full": "IntelliR"
     },
     "description": {
-        "short": "Short description of PowerAI",
-        "full": "Full description of PowerAI"
+        "short": "Short description of IntelliR",
+        "full": "Full description of IntelliR"
     },
     "accentColor": "#FFFFFF",
     "bots": [],
@@ -28,10 +28,10 @@
             "botId": "${{BOT_ID}}",
             "commands": [
                 {
-                    "id": "getSuggestions",
+                    "id": "getIntelligentResponse",
                     "context": ["compose", "message", "commandBox"],
-                    "description": "Command to run action to get suggestions from Compose Box",
-                    "title": "Get Suggestions",
+                    "description": "Command to run action to get intelligent response from Compose Box",
+                    "title": "Intelligent response",
                     "type": "action",
                     "fetchTask": true
                 }
@@ -48,10 +48,7 @@
     "validDomains": [
         "mepowerai.azurewebsites.net",
         "token.botframework.com",
-        "power-ai-front-end.vercel.app",
-        "www.power-ai-front-end.vercel.app",
-        "power-ai-front-end-git-localenv-zenowang-sswcomaus-projects.vercel.app",
-        "www.power-ai-front-end-git-localenv-zenowang-sswcomaus-projects.vercel.app",
+        "purple-tree-062b01200.6.azurestaticapps.net",
         "example.com",
         "www.example.com"
     ]

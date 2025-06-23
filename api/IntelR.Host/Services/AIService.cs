@@ -25,17 +25,27 @@ public class AIService(
 
         var gitHubIntentAnalysisChatHistory = _chatHistoryProcessor.ConvertToOpenAIMessages(
             request,
-            PromptTemplates.GetGitHubMcpPrePrompt(_mcpOptions.GitHubServer.Identity, _mcpOptions.GitHubServer.AllowedRepositories)
+            PromptTemplates.GitHubMcpPreSystemPrompt
         );
 
         var githubIntentAnalysisUserPrompt = gitHubIntentAnalysisChatHistory.FirstOrDefault(m => m.Role == AuthorRole.User)?.Content ?? string.Empty;
         var githubIntentAnalysisSystemPrompt = gitHubIntentAnalysisChatHistory.FirstOrDefault(m => m.Role == AuthorRole.System)?.Content;
 
+        githubIntentAnalysisUserPrompt += """
+            GitHub identity: {{$gitHubIdentity}},
+            Possible repositories to infer from: {{$allowedRepositories}}
+        """;
+
         var githubIntentAnalysisResultModel = await InvokePromptAsync<GitHubIntentAnalysis>(
             kernel,
             githubIntentAnalysisUserPrompt,
             githubIntentAnalysisSystemPrompt,
-            promptName: "GitHub Intent Analysis");
+            promptName: "GitHub Intent Analysis",
+            arguments: new Dictionary<string, object?>
+            {
+                { "gitHubIdentity", _mcpOptions.GitHubServer.Identity },
+                { "allowedRepositories", _mcpOptions.GitHubServer.AllowedRepositories }
+            });
 
         var generateTopicsChatHistory = _chatHistoryProcessor.ConvertToOpenAIMessages(
             request,
@@ -63,7 +73,7 @@ public class AIService(
         return generateTopicsPromptResult;
     }
 
-    public async Task<SuggestedReply> GenerateRepliesAsync(RegisterConversationRequest conversation, SuggestedTopicItem topic)
+    public async Task<SuggestedReplies> GenerateRepliesAsync(RegisterConversationRequest conversation, SuggestedTopicItem topic)
     {
         var kernel = await _kernelFactory.GetKernelAsync();
 
@@ -82,9 +92,13 @@ public class AIService(
             {
                 mcpResult = mcpPromptResult!.Result;
             }
+            else
+            {
+                mcpResult = "Failed";
+            }
         }
 
-        var suggestedReplyUserPrompt = mcpResult ?? "(None)";
+        var suggestedReplyUserPrompt = mcpResult ?? "None";
 
         var chatHistory = _chatHistoryProcessor.ConvertToOpenAIMessages(
             conversation,
@@ -99,22 +113,25 @@ public class AIService(
             Context for GitHub information: {suggestedReplyUserPrompt}
         """;
 
-        var reply = await InvokePromptAsync<BasicSuggestedReply>(
+        var reply = await InvokePromptAsync<PromptSuggestedReplyItem>(
             kernel,
             userPrompt,
             systemPrompt,
             promptName: "Generate Suggested Reply");
 
-        var result = new SuggestedReply(reply);
+        var result = new SuggestedReplyItem(reply);
         if (topic.GitHubIntentAnalysis.IsGitHubRelated)
         {
             // TODO: This is only for test purpose
-            result.Metadata.Actions.Add(new SuggestedReplyAction
+            if (mcpResult == "Failed")
             {
-                Name = "YakShaver",
-                Type = SuggestedReplyActionType.Link,
-                Url = "https://yakshaver.com/api/testonly"
-            });
+                result.Metadata.Actions.Add(new SuggestedReplyAction
+                {
+                    Name = "YakShaver",
+                    Type = SuggestedReplyActionType.Link,
+                    Url = "https://yakshaver.com/api/testonly"
+                });
+            }
             
             result.Metadata.Actions.Add(new SuggestedReplyAction
             {
@@ -124,7 +141,7 @@ public class AIService(
             });
         }
 
-        return result;
+        return new SuggestedReplies([result]);
     }
 
     public async Task<SuggestedTopicsAndReplies> GenerateTopicAndRepliesAsync(RegisterConversationRequest request)
@@ -133,7 +150,7 @@ public class AIService(
 
         var gitHubIntentAnalysisChatHistory = _chatHistoryProcessor.ConvertToOpenAIMessages(
             request,
-            PromptTemplates.GetGitHubMcpPrePrompt(_mcpOptions.GitHubServer.Identity, _mcpOptions.GitHubServer.AllowedRepositories)
+            PromptTemplates.GitHubMcpPreSystemPrompt
         );
 
         var githubIntentAnalysisUserPrompt = gitHubIntentAnalysisChatHistory.FirstOrDefault(m => m.Role == AuthorRole.User)?.Content ?? string.Empty;
@@ -206,7 +223,8 @@ public class AIService(
         string? systemPrompt,
         bool autoFunctionChoice = false,
         int maxTokens = 1500,
-        string? promptName = null)
+        string? promptName = null,
+        IDictionary<string, object?>? arguments = null)
     {
 #pragma warning disable SKEXP0001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
         var kernelArguments = new KernelArguments(new OpenAIPromptExecutionSettings
@@ -219,6 +237,14 @@ public class AIService(
             MaxTokens = maxTokens
         });
 #pragma warning restore SKEXP0001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+
+        if (arguments != null)
+        {
+            foreach (var argument in arguments)
+            {
+                kernelArguments[argument.Key] = argument.Value;
+            }
+        }
 
         var result = (await kernel.InvokePromptAsync(
             userPrompt,

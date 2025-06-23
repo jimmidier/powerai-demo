@@ -67,7 +67,7 @@ public class ReplyController(AIService aiService, IMemoryCache memoryCache, IOpt
     }
 
     [HttpPost("[action]")]
-    public async Task<SuggestedReply> GenerateRepliesAsync(GenerateReplyRequest request)
+    public async Task<SuggestedReplies> GenerateRepliesAsync(GenerateReplyRequest request)
     {
         var (conversation, topics) = GetConversationTopicsFromCache(request.ChatKey);
         if (request.UseUserIntent)
